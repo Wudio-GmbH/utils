@@ -1,0 +1,79 @@
+name: "Deploy to Kubernetes"
+description: "Applies Kubernetes manifests for a given service using a kubeconfig secret."
+
+inputs:
+  kubeconfig:
+    description: "Base64 encoded kubeconfig"
+    required: true
+  service:
+    description: "Service name (e.g., backend)"
+    required: true
+  image:
+    description: "Full image reference (e.g., ghcr.io/org/app:sha-...)"
+    required: true
+  commitHash:
+    description: "Commit Hash for the deployment Tag"
+    required: true
+  namespace:
+    description: "Kubernetes namespace"
+    required: false
+    default: "wudio"
+
+runs:
+  using: "composite"
+  steps:
+
+    # 1️⃣ Write kubeconfig
+    - name: Set up kubeconfig
+      shell: bash
+      run: |
+        echo "${{ inputs.kubeconfig }}" > kubeconfig.yaml
+        mkdir -p ~/.kube
+        cp kubeconfig.yaml ~/.kube/config
+        chmod 600 ~/.kube/config
+        echo "✅ Kubeconfig setup complete"
+    
+    # 2️⃣ Verify cluster connection
+    - name: Verify connection
+      shell: bash
+      run: kubectl get nodes
+
+    - name: Create namespace if not exists
+      shell: bash
+      run: |
+        if kubectl get namespace ${{ inputs.namespace }} >/dev/null 2>&1; then
+          echo "✅ Namespace '${{ inputs.namespace }}' already exists."
+        else
+          echo "🚀 Creating namespace '${{ inputs.namespace }}'..."
+          kubectl create namespace ${{ inputs.namespace }}
+        fi
+
+
+    # 3️⃣ Apply deployment + service
+    - name: Apply manifests
+      shell: bash
+      env:
+        IMAGE_TAG: ${{ inputs.commitHash }}
+      run: |
+        IMAGE="${{ inputs.image }}:${IMAGE_TAG}"
+        echo "🔄 Deploying service ${{ inputs.service }} with image $IMAGE"
+
+        # Versuche zuerst, das Image im bestehenden Deployment zu setzen
+        if ! kubectl set image deployment/${{ inputs.service }} \
+          ${{ inputs.service }}=$IMAGE -n ${{ inputs.namespace }} --record; then
+          echo "ℹ️ Deployment not found, creating new one..."
+          # Ersetze den Platzhalter im YAML on the fly
+          envsubst < deployments/deployment.${{ inputs.service }}.yml | kubectl apply -f -
+        fi
+
+    # 4️⃣ Wait for rollout
+    - name: Wait for rollout
+      shell: bash
+      run: |
+        DEPLOYMENT_NAME=$(kubectl get deploy -n ${{ inputs.namespace }} -o name | grep "${{ inputs.service }}" | head -n1)
+        if [ -z "$DEPLOYMENT_NAME" ]; then
+          echo "❌ Kein Deployment mit dem Namen ${{ inputs.service }} gefunden!"
+          exit 1
+        fi
+        echo "🔎 Warte auf Rollout von $DEPLOYMENT_NAME..."
+        kubectl rollout status "$DEPLOYMENT_NAME" -n ${{ inputs.namespace }} --timeout=120s

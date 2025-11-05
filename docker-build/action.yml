@@ -1,0 +1,78 @@
+name: "Build and Push Docker Image"
+description: "Builds and pushes a Docker image to GHCR, including all preparation steps."
+
+inputs:
+  service:
+    description: "The service name (e.g., backend, dashboard)"
+    required: true
+  image:
+    description: "Image name on ghcr (e.g. wudio-backend, wudio-dashboard, wudio-actions)"
+    required: true
+  sha:
+    description: "Commit SHA for tagging"
+    required: true
+  username:
+    description: "GHCR user"
+    required: true
+  password:
+    description: "GHCR password"
+    required: true
+
+outputs:
+  fullImage:
+    description: "Full image name with tag (e.g. 4c6c436c)"
+    value: ${{ steps.meta.outputs.image }}
+  commitHash:
+    description: "Commit Hash which is used as tag (e.g. ghcr.io/org/wudio-backend)"
+    value: ${{ steps.meta.outputs.commitHash }}
+
+runs:
+  using: "composite"
+  steps:
+    # 1️⃣ Checkout Code
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 2️⃣ Normalize image owner to lowercase
+    - name: Normalize image owner to lowercase
+      id: vars
+      shell: bash
+      run: echo "owner_lc=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_OUTPUT
+
+    # 3️⃣ Download Nx build artifacts
+    - name: Download Nx build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: nx-dist
+        path: workspace
+
+    - name: Prepare image variable
+      id: meta
+      shell: bash
+      run: |
+        IMAGE="ghcr.io/${{ steps.vars.outputs.owner_lc }}/${{ inputs.image }}"
+        SHORT_SHA="${{ inputs.sha }}"
+        SHORT_SHA=${SHORT_SHA:0:7}
+        echo "fullImage=$IMAGE" >> $GITHUB_OUTPUT
+        echo "commitHash=$SHORT_SHA" >> $GITHUB_OUTPUT
+
+    # 4️⃣ Login to GHCR
+    - name: Login to GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ inputs.username }}
+        password: ${{ inputs.password }}
+
+    # 5️⃣ Build & Push the service
+    - name: Build & Push ${{ inputs.service }}
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: docker/${{ inputs.service }}.dockerfile
+        push: true
+        tags: |
+          ${{ steps.meta.outputs.fullImage }}:${{ steps.meta.outputs.commitHash }}
+          ${{ steps.meta.outputs.fullImage }}:latest
+        build-args: |
+          BUILD_TAG=${{ steps.meta.outputs.commitHash }}

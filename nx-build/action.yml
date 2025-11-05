@@ -1,0 +1,62 @@
+name: 'NX Build'
+description: 'Build all Nx projects and upload artifacts'
+
+inputs:
+  node-version:
+    description: 'Node.js version'
+    required: false
+    default: '23.x'
+  command:
+    description: 'Nx build command to run (default: build all)'
+    required: false
+    default: 'nx run-many --target=build --all --verbose'
+
+outputs:
+  build-cache:
+    description: 'Whether the build cache was hit'
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/checkout@v5
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Prepare environment
+      shell: bash
+      run: |
+        rm workspace/environments/src/lib/environments.ts
+        mv workspace/environments/src/lib/environments.run.ts workspace/environments/src/lib/environments.ts
+
+    - name: Cache node_modules
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.npm
+          workspace/node_modules
+        key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+
+    - name: Install dependencies & Build all Nx projects
+      shell: bash
+      run: |
+        cd workspace
+        npm install -g nx
+        npm ci
+        ${{ inputs.command }}
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: nx-dist
+        path: |
+          workspace/dist/
+          workspace/node_modules/
+          !workspace/dist/**/*.map
+        retention-days: 1
+
+    - name: Export cache hit result
+      shell: bash
+      run: echo "build-cache=${{ steps.cache.outputs.cache-hit }}" >> $GITHUB_OUTPUT
