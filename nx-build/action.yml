@@ -10,6 +10,10 @@ inputs:
     description: 'Nx build command to run (default: build all)'
     required: false
     default: 'nx run-many --target=build --all --verbose'
+  location:
+    description: 'Location of the NX Workspace'
+    required: false
+    default: ''
 
 outputs:
   build-cache:
@@ -26,8 +30,9 @@ runs:
 
     - name: Prepare environment
       shell: bash
+      working-directory: ${{ inputs.location }}
       run: |
-        rm workspace/environments/src/lib/environments.ts
+        rm -f workspace/environments/src/lib/environments.ts
         mv workspace/environments/src/lib/environments.run.ts workspace/environments/src/lib/environments.ts
 
     - name: Cache node_modules
@@ -36,11 +41,12 @@ runs:
       with:
         path: |
           ~/.npm
-          workspace/node_modules
+          ${{ inputs.location }}workspace/node_modules
         key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
 
     - name: Install dependencies & Build all Nx projects
       shell: bash
+      working-directory: ${{ inputs.location }}
       run: |
         cd workspace
         npm install -g nx
@@ -52,9 +58,9 @@ runs:
       with:
         name: nx-dist
         path: |
-          workspace/dist/
-          workspace/node_modules/
-          !workspace/dist/**/*.map
+          ${{ inputs.location }}workspace/dist/
+          ${{ inputs.location }}workspace/node_modules/
+          !${{ inputs.location }}workspace/dist/**/*.map
         retention-days: 1
 
     - name: Export cache hit result
