@@ -1,0 +1,78 @@
+name: 'PHP Build'
+description: 'Install PHP, install composer dependencies, run build/test commands and upload artifacts'
+
+inputs:
+  php-version:
+    description: 'PHP version'
+    required: false
+    default: '8.3'
+  command:
+    description: 'Command to run (e.g., composer build, artisan build, phpunit)'
+    required: false
+    default: 'composer install --no-dev --optimize-autoloader'
+  location:
+    description: 'Path to PHP project'
+    required: false
+    default: ''
+  artifact:
+    description: 'Name of the artifact'
+    type: string
+    required: true
+
+outputs:
+  build-cache:
+    description: 'Whether composer cache was hit'
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/checkout@v5
+
+    # 1️⃣ Install PHP
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ inputs.php-version }}
+        extensions: mbstring, intl, pdo, mysql, curl
+        coverage: none
+
+    # 2️⃣ Cache Composer Dependencies
+    - name: Cache composer dependencies
+      id: composer-cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.composer/cache
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+
+    # 3️⃣ Install dependencies + run command
+    - name: Install dependencies & Run PHP command
+      shell: bash
+      working-directory: ${{ inputs.location }}
+      run: |
+        if [ -f "composer.json" ]; then
+          echo "📦 Installing composer dependencies..."
+          composer install --no-progress --prefer-dist --no-interaction
+        else
+          echo "⚠️ No composer.json found in location '${{ inputs.location }}'"
+        fi
+
+        echo "🚀 Running custom command:"
+        echo "👉 ${{ inputs.command }}"
+        ${{ inputs.command }}
+
+    # 4️⃣ Upload build artifacts (if any)
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact }}
+        path: |
+          ${{ inputs.location }}dist/
+          ${{ inputs.location }}vendor/
+          !${{ inputs.location }}dist/**/*.map
+        retention-days: 1
+
+    # 5️⃣ Export cache result
+    - name: Export cache hit result
+      shell: bash
+      run: echo "build-cache=${{ steps.composer-cache.outputs.cache-hit }}" >> $GITHUB_OUTPUT

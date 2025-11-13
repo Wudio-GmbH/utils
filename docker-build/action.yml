@@ -17,6 +17,11 @@ inputs:
   password:
     description: "GHCR password"
     required: true
+  artifact:
+    description: 'Name of the artifact'
+    type: string
+    required: true
+
 
 outputs:
   fullImage:
@@ -43,7 +48,7 @@ runs:
     - name: Download Nx build artifacts
       uses: actions/download-artifact@v4
       with:
-        name: nx-dist
+        name: ${{ inputs.artifact }}
         path: workspace
 
     - name: Prepare image variable

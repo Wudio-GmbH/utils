@@ -24,6 +24,10 @@ on:
         description: "GHCR username"
         required: true
         type: string
+      artifact:
+        description: 'Name of the artifact'
+        type: string
+        required: true
 
     secrets:
       kubeconfig:
@@ -51,6 +55,7 @@ jobs:
           username: ${{ inputs.username }}
           password: ${{ secrets.password }}
           image: ${{ inputs.image }}
+          artifact: ${{ inputs.artifact }}
 
   docker-deploy:
     needs: docker-build

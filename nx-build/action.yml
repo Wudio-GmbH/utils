@@ -14,6 +14,10 @@ inputs:
     description: 'Location of the NX Workspace'
     required: false
     default: ''
+  artifact:
+    description: 'Name of the artifact'
+    type: string
+    required: true
 
 outputs:
   build-cache:
@@ -56,7 +60,7 @@ runs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: nx-dist
+        name: ${{ inputs.artifact }}
         path: |
           ${{ inputs.location }}workspace/dist/
           ${{ inputs.location }}workspace/node_modules/
