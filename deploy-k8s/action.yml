@@ -55,6 +55,27 @@ runs:
       env:
         IMAGE_TAG: ${{ inputs.commitHash }}
       run: |
+
+        echo "🧪 DEBUG — Deploy Step Variables"
+        echo "• inputs.image: '${{ inputs.image }}'"
+        echo "• IMAGE_TAG: '${IMAGE_TAG}'"
+        echo "• combined: '${{ inputs.image }}:${IMAGE_TAG}'"
+
+        # Prüfe, ob image leer ist
+        if [ -z "${{ inputs.image }}" ]; then
+          echo "❌ ERROR: inputs.image ist leer!"
+        else
+          echo "✔ inputs.image ist gesetzt"
+        fi
+
+        # Prüfe IMAGE_TAG
+        if [ -z "${IMAGE_TAG}" ]; then
+          echo "❌ ERROR: IMAGE_TAG ist leer!"
+        else
+          echo "✔ IMAGE_TAG ist gesetzt"
+        fi
+
+        # Jetzt final zusammensetzen
         IMAGE="${{ inputs.image }}:${IMAGE_TAG}"
         echo "🔄 Deploying service ${{ inputs.service }} with image $IMAGE"
 

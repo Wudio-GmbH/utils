@@ -21,12 +21,22 @@ inputs:
     description: 'Name of the artifact'
     type: string
     required: true
+  location:
+    description: 'Path to project'
+    required: false
+    default: ''
+    type: string
+  cacheDestination:
+    description: 'Path for cache'
+    required: false
+    default: ''
+    type: string
 
 
 outputs:
   fullImage:
     description: "Full image name with tag (e.g. 4c6c436c)"
-    value: ${{ steps.meta.outputs.image }}
+    value: ${{ steps.meta.outputs.fullImage }}
   commitHash:
     description: "Commit Hash which is used as tag (e.g. ghcr.io/org/wudio-backend)"
     value: ${{ steps.meta.outputs.commitHash }}
@@ -44,12 +54,18 @@ runs:
       shell: bash
       run: echo "owner_lc=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_OUTPUT
 
-    # 3️⃣ Download Nx build artifacts
-    - name: Download Nx build artifacts
+    # 3️⃣ Download build artifacts
+    - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
         name: ${{ inputs.artifact }}
-        path: workspace
+        path: ${{ inputs.location }}${{ inputs.cacheDestination }}
+
+    - name: Debug Show what was downloaded
+      shell: bash
+      run: |
+        echo "Artifact downloaded into '${{ inputs.location }}'"
+        ls "${{ inputs.location }}"
 
     - name: Prepare image variable
       id: meta
@@ -68,6 +84,16 @@ runs:
         registry: ghcr.io
         username: ${{ inputs.username }}
         password: ${{ inputs.password }}
+
+    - name: Debug Print Docker build context (dry run)
+      shell: bash
+      run: |
+        docker build \
+          --no-cache \
+          --progress=plain \
+          --file docker/${{ inputs.service }}.dockerfile \
+          --build-arg BUILD_TAG=${{ steps.meta.outputs.commitHash }} \
+          .
 
     # 5️⃣ Build & Push the service
     - name: Build & Push ${{ inputs.service }}

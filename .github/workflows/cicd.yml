@@ -1,4 +1,4 @@
-name: Build and Deploy Docker Container
+name: CICD Pipeline for Build and Deploy Docker Container on K8S
 
 on:
   workflow_call:
@@ -28,6 +28,16 @@ on:
         description: 'Name of the artifact'
         type: string
         required: true
+      location:
+        description: 'Path to PHP project'
+        required: false
+        default: ''
+        type: string
+      cacheDestination:
+        description: 'Path for cache destination'
+        required: false
+        default: ''
+        type: string
 
     secrets:
       kubeconfig:
@@ -56,6 +66,8 @@ jobs:
           password: ${{ secrets.password }}
           image: ${{ inputs.image }}
           artifact: ${{ inputs.artifact }}
+          location: ${{ inputs.location }}
+          cacheDestination: ${{ inputs.cacheDestination }}
 
   docker-deploy:
     needs: docker-build
