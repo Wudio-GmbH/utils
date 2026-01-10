@@ -35,7 +35,11 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v5
+
+    - name: Debug repo structure 1
+      run: |
+        pwd
+        ls -lah
 
     - uses: actions/setup-node@v4
       with:
@@ -50,6 +54,21 @@ runs:
         key: nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           nx-${{ runner.os }}-
+
+    - name: Cache status
+      run: |
+        echo "Nx cache hit: ${{ steps.cache.outputs.cache-hit }}"
+
+    - name: Debug repo structure 2
+      run: |
+        pwd
+        ls -lah
+
+    - name: Inspect Nx cache directory
+      shell: bash
+      run: |
+        echo "Nx cache directory:"
+        ls -lah ${{ inputs.location }}workspace/node_modules/.cache/nx || true
 
     - name: Build Nx service
       shell: bash
