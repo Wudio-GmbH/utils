@@ -50,3 +50,11 @@ runs:
         npm ci
         npx nx --version
         ${{ inputs.command }}
+
+    - name: Debug repo structure
+      shell: bash
+      run: |
+        pwd
+        ls -lah
+        ls -lah workspace
+        ls -lah workspace/.nx
