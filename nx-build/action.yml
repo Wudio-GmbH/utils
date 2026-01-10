@@ -37,7 +37,7 @@ runs:
       with:
         path: |
           ~/.npm
-          ${{ inputs.location }}workspace/node_modules/.cache/nx
+          ${{ inputs.location }}workspace/.nx/cache
         key: nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           nx-${{ runner.os }}-

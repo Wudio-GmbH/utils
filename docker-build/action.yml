@@ -51,7 +51,7 @@ runs:
       with:
         path: |
           ~/.npm
-          ${{ inputs.location }}workspace/node_modules/.cache/nx
+          ${{ inputs.location }}workspace/.nx/cache
         key: nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           nx-${{ runner.os }}-
@@ -67,6 +67,7 @@ runs:
         pwd
         ls -lah
         ls -lah workspace
+        ls -lah workspace/.nx
 
     - name: Build Nx service
       shell: bash
@@ -75,12 +76,6 @@ runs:
         cd workspace
         npm ci
         npx nx build ${{ inputs.service }}
-
-    - name: Inspect Nx cache directory
-      shell: bash
-      run: |
-        echo "Nx cache directory:"
-        ls -lah ${{ inputs.location }}workspace/node_modules/.cache/nx || true
 
     - name: Normalize image owner to lowercase
       id: vars
