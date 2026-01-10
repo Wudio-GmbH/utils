@@ -78,6 +78,8 @@ runs:
       shell: bash
       working-directory: ${{ inputs.location }}
       run: |
+        pwd
+        ls -lah
         cd workspace
         npm ci
         npx nx build ${{ inputs.service }}
