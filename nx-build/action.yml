@@ -15,10 +15,6 @@ inputs:
     required: false
     default: ''
 
-outputs:
-  build-cache:
-    description: 'Whether the cache was hit'
-
 runs:
   using: 'composite'
   steps:
@@ -54,7 +50,3 @@ runs:
         npm ci
         npx nx --version
         ${{ inputs.command }}
-
-    - name: Export cache hit result
-      shell: bash
-      run: echo "build-cache=${{ steps.cache.outputs.cache-hit }}" >> $GITHUB_OUTPUT
