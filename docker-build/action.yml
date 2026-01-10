@@ -74,6 +74,15 @@ runs:
         ls -lah workspace
         ls -lah workspace/.nx
 
+    - name: Prepare environment
+      shell: bash
+      run: |
+        pwd
+        ls -lah
+        rm -f workspace/environments/src/lib/environments.ts
+        mv workspace/environments/src/lib/environments.run.ts workspace/environments/src/lib/environments.ts
+
+
     - name: Build Nx service
       shell: bash
       working-directory: ${{ inputs.location }}
