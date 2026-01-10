@@ -31,16 +31,15 @@ runs:
         rm -f workspace/environments/src/lib/environments.ts
         mv workspace/environments/src/lib/environments.run.ts workspace/environments/src/lib/environments.ts
 
-    - name: Restore Nx & npm cache
-      id: cache
+    - name: Restore npm & Nx cache
       uses: actions/cache@v4
       with:
         path: |
           ~/.npm
-          ${{ inputs.location }}workspace/.nx/cache
-        key: nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          workspace/.nx
+        key: build-${{ runner.os }}-${{ inputs.node-version }}-${{ hashFiles('workspace/package-lock.json') }}
         restore-keys: |
-          nx-${{ runner.os }}-
+          build-${{ runner.os }}-${{ inputs.node-version }}-
 
     - name: Install dependencies & Build all Nx projects
       shell: bash

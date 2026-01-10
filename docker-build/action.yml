@@ -46,20 +46,25 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
-    - name: Restore Nx & npm cache
+    - name: Restore npm & Nx cache
       uses: actions/cache@v4
+      id: cache
       with:
         path: |
           ~/.npm
-          ${{ inputs.location }}workspace/.nx/cache
-        key: nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          workspace/.nx
+        key: build-${{ runner.os }}-${{ inputs.node-version }}-${{ hashFiles('workspace/package-lock.json') }}
         restore-keys: |
-          nx-${{ runner.os }}-
+          build-${{ runner.os }}-${{ inputs.node-version }}-
 
     - name: Cache status
       shell: bash
       run: |
-        echo "Nx cache hit: ${{ steps.cache.outputs.cache-hit }}"
+        echo "Exact cache hit: ${{ steps.cache.outputs.cache-hit }}"
+        echo "Nx cache contents:"
+        ls -lah workspace/.nx || true
+        echo "npm cache contents:"
+        ls -lah ~/.npm || true
 
     - name: Debug repo structure 2
       shell: bash
