@@ -80,7 +80,6 @@ runs:
       run: |
         pwd
         ls -lah
-        cd workspace
         npm ci
         npx nx build ${{ inputs.service }}
 
