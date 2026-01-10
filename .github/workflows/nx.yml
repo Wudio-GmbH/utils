@@ -1,3 +1,4 @@
+
 name: CICD Pipeline for Build and Deploy Docker Container on K8S
 
 on:
@@ -29,6 +30,11 @@ on:
         required: false
         default: ''
         type: string
+      cacheDestination:
+        description: 'Path for cache destination'
+        required: false
+        default: ''
+        type: string
 
     secrets:
       kubeconfig:
@@ -49,14 +55,16 @@ jobs:
 
       - name: Build & Push ${{ inputs.service }}
         id: build
-        uses: Wudio-GmbH/utils/docker-build@nx
+        uses: Wudio-GmbH/utils/docker-build@main
         with:
           service: ${{ inputs.service }}
           sha: ${{ inputs.sha }}
           username: ${{ inputs.username }}
           password: ${{ secrets.password }}
           image: ${{ inputs.image }}
+          artifact: ${{ inputs.artifact }}
           location: ${{ inputs.location }}
+          cacheDestination: ${{ inputs.cacheDestination }}
 
   docker-deploy:
     needs: docker-build
