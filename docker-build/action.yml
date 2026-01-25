@@ -25,6 +25,10 @@ inputs:
     description: "Path to workspace"
     required: false
     default: ""
+  command:
+    description: "Optional custom command to execute instead of nx build"
+    required: false
+    default: ""
 
 outputs:
   fullImage:
@@ -84,6 +88,7 @@ runs:
 
 
     - name: Build Nx service
+      if: ${{ inputs.command == '' }}
       shell: bash
       working-directory: ${{ inputs.location }}
       run: |
@@ -91,6 +96,16 @@ runs:
         ls -lah
         npm ci
         npx nx build ${{ inputs.service }}
+
+    - name: Build Nx service (custom command)
+      if: ${{ inputs.command != '' }}
+      shell: bash
+      working-directory: ${{ inputs.location }}
+      run: |
+        pwd
+        ls -lah
+        npm ci
+        ${{ inputs.command }}
 
     - name: Normalize image owner to lowercase
       id: vars

@@ -29,6 +29,11 @@ on:
         required: false
         default: ''
         type: string
+      command:
+        description: "Optional custom command to execute instead of nx build"
+        required: false
+        default: ""
+        type: string
 
     secrets:
       kubeconfig:
@@ -57,6 +62,7 @@ jobs:
           password: ${{ secrets.password }}
           image: ${{ inputs.image }}
           location: ${{ inputs.location }}
+          command: ${{ inputs.command }}
 
   docker-deploy:
     needs: docker-build
