@@ -32,7 +32,8 @@ inputs:
   switch-environment:
     description: "Whether to run Prepare environment (swap environments.run.ts)"
     required: false
-    default: "true"
+    type: boolean
+    default: true
 
 outputs:
   fullImage:
@@ -49,7 +50,7 @@ runs:
         node-version: ${{ inputs.node-version }}
 
     - name: Prepare environment
-      if: ${{ inputs.switch-environment == 'true' }}
+      if: ${{ inputs.switch-environment }}
       shell: bash
       run: |
         pwd

@@ -36,8 +36,9 @@ on:
         type: string
       switch-environment:
         description: "Whether to run Prepare environment (swap environments.run.ts)"
+        type: boolean
         required: false
-        default: "true"
+        default: true
 
     secrets:
       kubeconfig:
