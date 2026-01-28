@@ -86,15 +86,3 @@ runs:
           # Ersetze den Platzhalter im YAML on the fly
           envsubst < deployments/deployment.${{ inputs.service }}.yml | kubectl apply -f -
         fi
-
-    # 4️⃣ Wait for rollout
-    - name: Wait for rollout
-      shell: bash
-      run: |
-        DEPLOYMENT_NAME=$(kubectl get deploy -n ${{ inputs.namespace }} -o name | grep "${{ inputs.service }}" | head -n1)
-        if [ -z "$DEPLOYMENT_NAME" ]; then
-          echo "❌ Kein Deployment mit dem Namen ${{ inputs.service }} gefunden!"
-          exit 0
-        fi
-        echo "🔎 Warte auf Rollout von $DEPLOYMENT_NAME..."
-        kubectl rollout status "$DEPLOYMENT_NAME" -n ${{ inputs.namespace }} --timeout=120s
