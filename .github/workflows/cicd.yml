@@ -34,6 +34,10 @@ on:
         required: false
         default: ""
         type: string
+      switch-environment:
+        description: "Whether to run Prepare environment (swap environments.run.ts)"
+        required: false
+        default: "true"
 
     secrets:
       kubeconfig:
@@ -63,6 +67,7 @@ jobs:
           image: ${{ inputs.image }}
           location: ${{ inputs.location }}
           command: ${{ inputs.command }}
+          switch-environment: ${{ inputs.switch-environment }}
 
   docker-deploy:
     needs: docker-build
