@@ -39,6 +39,11 @@ on:
         type: boolean
         required: false
         default: true
+      paths:
+        description: "Optional requirement which paths must be changed to trigger the build"
+        required: false
+        default: "[]"
+        type: string
 
     secrets:
       kubeconfig:
@@ -49,8 +54,23 @@ on:
         required: true
 
 jobs:
-  docker-build:
+
+  check-changes:
     runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.changes.outputs.has_changes }}
+    steps:
+      - uses: Wudio-GmbH/utils/check-changes@nx
+        id: changes
+        with:
+          paths: ${{ inputs.paths }}
+          base: ${{ github.event.pull_request.base.sha }}  # bei PR
+
+
+  docker-build:
+    needs: [check-changes]
+    runs-on: ubuntu-latest
+    if: needs.check-changes.outputs.has_changes == 'true'
     outputs:
       imageTag: ${{ steps.build.outputs.fullImage }}
       commitHash: ${{ steps.build.outputs.commitHash }}

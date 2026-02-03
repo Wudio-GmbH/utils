@@ -1,0 +1,74 @@
+name: "Check path changes"
+description: "Prüft, ob es Änderungen in den angegebenen Pfaden gibt. Leere Liste = immer true."
+
+inputs:
+  paths:
+    description: "JSON-Array mit Pfaden (z.B. [\"libs\", \"apps/backend\"]). Leer = immer Änderungen."
+    required: false
+    default: "[]"
+  base:
+    description: "Basis-Ref für den Vergleich (z.B. origin/main; bei PR: github.event.pull_request.base.sha)"
+    required: false
+    default: "origin/main"
+
+outputs:
+  has_changes:
+    description: "true wenn Änderungen in den Pfaden gefunden wurden (oder Liste leer), sonst false"
+    value: ${{ steps.check.outputs.has_changes }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Check for changes
+      id: check
+      shell: bash
+      run: |
+        PATHS_INPUT='${{ inputs.paths }}'
+        BASE='${{ inputs.base }}'
+
+        # Leere Liste oder "[]" → immer true
+        if [ -z "$PATHS_INPUT" ] || [ "$PATHS_INPUT" = "[]" ]; then
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          echo "Leere Pfadliste → has_changes=true"
+          exit 0
+        fi
+
+        # Geänderte Dateien (BASE..HEAD; bei Push ohne base: HEAD~1..HEAD)
+        CHANGED=$(git diff --name-only "$BASE"...HEAD 2>/dev/null || git diff --name-only HEAD~1...HEAD 2>/dev/null || true)
+
+        if [ -z "$CHANGED" ]; then
+          echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          echo "Keine geänderten Dateien → has_changes=false"
+          exit 0
+        fi
+
+        # Pfade aus JSON lesen (ohne jq: einfaches Parsing für ["a", "b"])
+        # Entferne [ ] und " und splitte nach ,
+        PATHS_STR=$(echo "$PATHS_INPUT" | sed 's/^\[//;s/\]$//;s/"//g')
+        IFS=',' read -ra PATH_ARRAY <<< "$PATHS_STR"
+
+        FOUND=0
+        while IFS= read -r file; do
+          [ -z "$file" ] && continue
+          for p in "${PATH_ARRAY[@]}"; do
+            p=$(echo "$p" | xargs)
+            # Datei liegt unter dem Pfad (Prefix-Match)
+            if [ "$p" = "$file" ] || [[ "$file" == "$p"/* ]]; then
+              FOUND=1
+              break 2
+            fi
+          done
+        done <<< "$CHANGED"
+
+        if [ "$FOUND" -eq 1 ]; then
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          echo "Änderungen in den Pfaden gefunden → has_changes=true"
+        else
+          echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          echo "Keine Änderungen in den Pfaden → has_changes=false"
+        fi
