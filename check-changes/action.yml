@@ -7,9 +7,9 @@ inputs:
     required: false
     default: "[]"
   base:
-    description: "Basis-Ref für den Vergleich (z.B. origin/main; bei PR: github.event.pull_request.base.sha)"
+    description: "Basis-Ref für den Vergleich (leer = vorheriger Commit HEAD~1)"
     required: false
-    default: "origin/main"
+    default: ""
 
 outputs:
   has_changes:
@@ -22,7 +22,7 @@ runs:
     - name: Checkout
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0
+        fetch-depth: 2
 
     - name: Check for changes
       id: check
@@ -38,8 +38,14 @@ runs:
           exit 0
         fi
 
-        # Geänderte Dateien (BASE..HEAD; bei Push ohne base: HEAD~1..HEAD)
-        CHANGED=$(git diff --name-only "$BASE"...HEAD 2>/dev/null || git diff --name-only HEAD~1...HEAD 2>/dev/null || true)
+        # Geänderte Dateien: immer zum vorherigen Commit (HEAD~1), falls base gesetzt dann base..HEAD
+        if [ -n "$BASE" ]; then
+          CHANGED=$(git diff --name-only "$BASE"...HEAD 2>/dev/null || true)
+        else
+          CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || true)
+        fi
+        echo "changed: $CHANGED"
+        echo "paths: $PATHS_INPUT"
 
         if [ -z "$CHANGED" ]; then
           echo "has_changes=false" >> "$GITHUB_OUTPUT"
