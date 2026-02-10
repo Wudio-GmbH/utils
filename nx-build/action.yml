@@ -1,5 +1,5 @@
 name: 'NX Build'
-description: 'Build all Nx projects and upload artifacts'
+description: 'Warm up Nx cache by building all projects'
 
 inputs:
   node-version:
@@ -7,21 +7,13 @@ inputs:
     required: false
     default: '23.x'
   command:
-    description: 'Nx build command to run (default: build all)'
+    description: 'Nx build command'
     required: false
     default: 'nx run-many --target=build --all --verbose'
   location:
     description: 'Location of the NX Workspace'
     required: false
     default: ''
-  artifact:
-    description: 'Name of the artifact'
-    type: string
-    required: true
-
-outputs:
-  build-cache:
-    description: 'Whether the build cache was hit'
 
 runs:
   using: 'composite'
@@ -39,34 +31,29 @@ runs:
         rm -f workspace/environments/src/lib/environments.ts
         mv workspace/environments/src/lib/environments.run.ts workspace/environments/src/lib/environments.ts
 
-    - name: Cache node_modules
-      id: cache
+    - name: Restore npm & Nx cache
       uses: actions/cache@v4
       with:
         path: |
           ~/.npm
-          ${{ inputs.location }}workspace/node_modules
-        key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          workspace/.nx
+        key: build-${{ runner.os }}-${{ inputs.node-version }}-${{ hashFiles('workspace/package-lock.json') }}
+        restore-keys: |
+          build-${{ runner.os }}-${{ inputs.node-version }}-
 
     - name: Install dependencies & Build all Nx projects
       shell: bash
       working-directory: ${{ inputs.location }}
       run: |
         cd workspace
-        npm install -g nx
         npm ci
+        npx nx --version
         ${{ inputs.command }}
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ inputs.artifact }}
-        path: |
-          ${{ inputs.location }}workspace/dist/
-          ${{ inputs.location }}workspace/node_modules/
-          !${{ inputs.location }}workspace/dist/**/*.map
-        retention-days: 1
-
-    - name: Export cache hit result
+    - name: Debug repo structure
       shell: bash
-      run: echo "build-cache=${{ steps.cache.outputs.cache-hit }}" >> $GITHUB_OUTPUT
+      run: |
+        pwd
+        ls -lah
+        ls -lah workspace
+        ls -lah workspace/.nx

@@ -1,3 +1,4 @@
+
 name: CICD Pipeline for Build and Deploy Docker Container on K8S
 
 on:
@@ -29,21 +30,12 @@ on:
         required: false
         default: ''
         type: string
-      command:
-        description: "Optional custom command to execute instead of nx build"
+      cacheDestination:
+        description: 'Path for cache destination'
         required: false
-        default: ""
+        default: ''
         type: string
-      switch-environment:
-        description: "Whether to run Prepare environment (swap environments.run.ts)"
-        type: boolean
-        required: false
-        default: true
-      paths:
-        description: "Optional requirement which paths must be changed to trigger the build"
-        required: false
-        default: "[]"
-        type: string
+      
 
     secrets:
       kubeconfig:
@@ -54,23 +46,8 @@ on:
         required: true
 
 jobs:
-
-  check-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      has_changes: ${{ steps.changes.outputs.has_changes }}
-    steps:
-      - uses: Wudio-GmbH/utils/check-changes@nx
-        id: changes
-        with:
-          paths: ${{ inputs.paths }}
-          base: ${{ github.event.pull_request.base.sha }}  # bei PR
-
-
   docker-build:
-    needs: [check-changes]
     runs-on: ubuntu-latest
-    if: needs.check-changes.outputs.has_changes == 'true'
     outputs:
       imageTag: ${{ steps.build.outputs.fullImage }}
       commitHash: ${{ steps.build.outputs.commitHash }}
@@ -79,16 +56,16 @@ jobs:
 
       - name: Build & Push ${{ inputs.service }}
         id: build
-        uses: Wudio-GmbH/utils/docker-build@nx
+        uses: Wudio-GmbH/utils/docker-build@main
         with:
           service: ${{ inputs.service }}
           sha: ${{ inputs.sha }}
           username: ${{ inputs.username }}
           password: ${{ secrets.password }}
           image: ${{ inputs.image }}
+          artifact: ${{ inputs.artifact }}
           location: ${{ inputs.location }}
-          command: ${{ inputs.command }}
-          switch-environment: ${{ inputs.switch-environment }}
+          cacheDestination: ${{ inputs.cacheDestination }}
 
   docker-deploy:
     needs: docker-build

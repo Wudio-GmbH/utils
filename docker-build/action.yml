@@ -1,15 +1,15 @@
 name: "Build and Push Docker Image"
-description: "Builds and pushes a Docker image to GHCR, including all preparation steps."
+description: "Builds and pushes a Docker image to GHCR"
 
 inputs:
   service:
-    description: "The service name (e.g., backend, dashboard)"
+    description: "Nx service name"
     required: true
   image:
-    description: "Image name on ghcr (e.g. wudio-backend, wudio-dashboard, wudio-actions)"
+    description: "Image name on ghcr"
     required: true
   sha:
-    description: "Commit SHA for tagging"
+    description: "Commit SHA"
     required: true
   username:
     description: "GHCR user"
@@ -17,55 +17,71 @@ inputs:
   password:
     description: "GHCR password"
     required: true
-  artifact:
-    description: 'Name of the artifact'
-    type: string
-    required: true
+  node-version:
+    description: "Node.js version"
+    required: false
+    default: "23.x"
   location:
-    description: 'Path to project'
+    description: "Path to workspace"
     required: false
-    default: ''
-    type: string
-  cacheDestination:
-    description: 'Path for cache'
+    default: ""
+  command:
+    description: "Optional custom command to execute instead of nx build"
     required: false
-    default: ''
-    type: string
-
+    default: ""
+  switch-environment:
+    description: "Whether to run Prepare environment (swap environments.run.ts)"
+    required: false
+    type: boolean
+    default: true
 
 outputs:
   fullImage:
-    description: "Full image name with tag (e.g. 4c6c436c)"
     value: ${{ steps.meta.outputs.fullImage }}
   commitHash:
-    description: "Commit Hash which is used as tag (e.g. ghcr.io/org/wudio-backend)"
     value: ${{ steps.meta.outputs.commitHash }}
 
 runs:
   using: "composite"
   steps:
-    # 1️⃣ Checkout Code
-    - name: Checkout repository
-      uses: actions/checkout@v4
 
-    # 2️⃣ Normalize image owner to lowercase
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Prepare environment
+      if: ${{ inputs.switch-environment }}
+      shell: bash
+      run: |
+        pwd
+        ls -lah
+        rm -f workspace/environments/src/lib/environments.ts
+        mv workspace/environments/src/lib/environments.run.ts workspace/environments/src/lib/environments.ts
+
+    - name: Build Nx service
+      if: ${{ inputs.command == '' }}
+      shell: bash
+      working-directory: ${{ inputs.location }}
+      run: |
+        pwd
+        ls -lah
+        npm ci
+        npx nx build ${{ inputs.service }}
+
+    - name: Build service (custom command)
+      if: ${{ inputs.command != '' }}
+      shell: bash
+      working-directory: ${{ inputs.location }}
+      run: |
+        pwd
+        ls -lah
+        npm ci
+        ${{ inputs.command }}
+
     - name: Normalize image owner to lowercase
       id: vars
       shell: bash
       run: echo "owner_lc=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_OUTPUT
-
-    # 3️⃣ Download build artifacts
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: ${{ inputs.artifact }}
-        path: ${{ inputs.location }}${{ inputs.cacheDestination }}
-
-    - name: Debug Show what was downloaded
-      shell: bash
-      run: |
-        echo "Artifact downloaded into '${{ inputs.location }}'"
-        ls "${{ inputs.location }}"
 
     - name: Prepare image variable
       id: meta
@@ -77,7 +93,6 @@ runs:
         echo "fullImage=$IMAGE" >> $GITHUB_OUTPUT
         echo "commitHash=$SHORT_SHA" >> $GITHUB_OUTPUT
 
-    # 4️⃣ Login to GHCR
     - name: Login to GHCR
       uses: docker/login-action@v3
       with:
@@ -85,18 +100,7 @@ runs:
         username: ${{ inputs.username }}
         password: ${{ inputs.password }}
 
-    - name: Debug Print Docker build context (dry run)
-      shell: bash
-      run: |
-        docker build \
-          --no-cache \
-          --progress=plain \
-          --file docker/${{ inputs.service }}.dockerfile \
-          --build-arg BUILD_TAG=${{ steps.meta.outputs.commitHash }} \
-          .
-
-    # 5️⃣ Build & Push the service
-    - name: Build & Push ${{ inputs.service }}
+    - name: Build & Push Docker Image
       uses: docker/build-push-action@v6
       with:
         context: .
