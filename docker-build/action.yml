@@ -25,6 +25,11 @@ inputs:
     description: "Path to workspace"
     required: false
     default: ""
+  environment:
+    description: "Environment to use (run or prod)"
+    required: false
+    default: "run"
+    type: string
   command:
     description: "Optional custom command to execute instead of nx build"
     required: false
@@ -56,7 +61,7 @@ runs:
         pwd
         ls -lah
         rm -f workspace/environments/src/lib/environments.ts
-        mv workspace/environments/src/lib/environments.run.ts workspace/environments/src/lib/environments.ts
+        mv workspace/environments/src/lib/environments.${{ inputs.environment }}.ts workspace/environments/src/lib/environments.ts
 
     - name: Build Nx service
       if: ${{ inputs.command == '' }}
