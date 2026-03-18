@@ -34,6 +34,11 @@ on:
         required: false
         default: ""
         type: string
+      environment:
+        description: "Environment to use (run or qas)"
+        required: false
+        default: "run"
+        type: string
       switch-environment:
         description: "Whether to run Prepare environment (swap environments.run.ts)"
         type: boolean
@@ -60,7 +65,7 @@ jobs:
     outputs:
       has_changes: ${{ steps.changes.outputs.has_changes }}
     steps:
-      - uses: Wudio-GmbH/utils/check-changes@nx
+      - uses: Wudio-GmbH/utils/check-changes@main
         id: changes
         with:
           paths: ${{ inputs.paths }}
@@ -79,7 +84,7 @@ jobs:
 
       - name: Build & Push ${{ inputs.service }}
         id: build
-        uses: Wudio-GmbH/utils/docker-build@nx
+        uses: Wudio-GmbH/utils/docker-build@main
         with:
           service: ${{ inputs.service }}
           sha: ${{ inputs.sha }}
@@ -89,6 +94,7 @@ jobs:
           location: ${{ inputs.location }}
           command: ${{ inputs.command }}
           switch-environment: ${{ inputs.switch-environment }}
+          environment: ${{ inputs.environment }}
 
   docker-deploy:
     needs: docker-build

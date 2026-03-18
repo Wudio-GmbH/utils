@@ -60,6 +60,7 @@ runs:
       run: |
         pwd
         ls -lah
+        echo "environment: ${{ inputs.environment }}"
         rm -f workspace/environments/src/lib/environments.ts
         mv workspace/environments/src/lib/environments.${{ inputs.environment }}.ts workspace/environments/src/lib/environments.ts
 
@@ -70,7 +71,7 @@ runs:
       run: |
         pwd
         ls -lah
-        npm ci
+        npm i
         npx nx build ${{ inputs.service }}
 
     - name: Build service (custom command)
