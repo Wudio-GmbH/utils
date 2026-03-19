@@ -46,7 +46,7 @@ runs:
       working-directory: ${{ inputs.location }}
       run: |
         cd workspace
-        npm ci
+        npm i
         npx nx --version
         ${{ inputs.command }}
 

@@ -60,6 +60,7 @@ runs:
       run: |
         pwd
         ls -lah
+        echo "switch-environment: ${{ inputs.switch-environment }}"
         echo "environment: ${{ inputs.environment }}"
         rm -f workspace/environments/src/lib/environments.ts
         mv workspace/environments/src/lib/environments.${{ inputs.environment }}.ts workspace/environments/src/lib/environments.ts
@@ -72,6 +73,7 @@ runs:
         pwd
         ls -lah
         npm i
+        echo "no input command"
         npx nx build ${{ inputs.service }}
 
     - name: Build service (custom command)
@@ -81,7 +83,8 @@ runs:
       run: |
         pwd
         ls -lah
-        npm ci
+        npm i
+        echo "command: ${{ inputs.command }}"
         ${{ inputs.command }}
 
     - name: Normalize image owner to lowercase
@@ -105,6 +108,13 @@ runs:
         registry: ghcr.io
         username: ${{ inputs.username }}
         password: ${{ inputs.password }}
+
+    - name: Debug
+      shell: bash
+      run: |
+        pwd
+        ls -lah
+        ls -lah docker
 
     - name: Build & Push Docker Image
       uses: docker/build-push-action@v6
