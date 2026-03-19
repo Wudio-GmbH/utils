@@ -72,6 +72,7 @@ runs:
         pwd
         ls -lah
         npm i
+        echo "no input command"
         npx nx build ${{ inputs.service }}
 
     - name: Build service (custom command)
@@ -81,7 +82,8 @@ runs:
       run: |
         pwd
         ls -lah
-        npm ci
+        npm i
+        echo "command: ${{ inputs.command }}"
         ${{ inputs.command }}
 
     - name: Normalize image owner to lowercase
