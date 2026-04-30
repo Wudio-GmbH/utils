@@ -54,12 +54,8 @@ runs:
       shell: bash
       env:
         IMAGE_TAG: ${{ inputs.commitHash }}
+        K8S_NAMESPACE: ${{ inputs.namespace }}
       run: |
-
-        echo "🧪 DEBUG — Deploy Step Variables"
-        echo "• inputs.image: '${{ inputs.image }}'"
-        echo "• IMAGE_TAG: '${IMAGE_TAG}'"
-        echo "• combined: '${{ inputs.image }}:${IMAGE_TAG}'"
 
         # Prüfe, ob image leer ist
         if [ -z "${{ inputs.image }}" ]; then
@@ -79,10 +75,9 @@ runs:
         IMAGE="${{ inputs.image }}:${IMAGE_TAG}"
         echo "🔄 Deploying service ${{ inputs.service }} with image $IMAGE"
 
-        # Versuche zuerst, das Image im bestehenden Deployment zu setzen
         if ! kubectl set image deployment/${{ inputs.service }} \
-          ${{ inputs.service }}=$IMAGE -n ${{ inputs.namespace }} --record; then
+          ${{ inputs.service }}=$IMAGE -n ${{ inputs.namespace }}; then
           echo "ℹ️ Deployment not found, creating new one..."
-          # Ersetze den Platzhalter im YAML on the fly
-          envsubst < deployments/deployment.${{ inputs.service }}.yml | kubectl apply -f -
+          envsubst < deployments/deployment.${{ inputs.service }}.yml | \
+            kubectl apply -f - -n ${{ inputs.namespace }}
         fi
