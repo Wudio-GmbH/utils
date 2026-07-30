@@ -22,9 +22,9 @@ inputs:
     required: false
     default: "23.x"
   location:
-    description: "Path to workspace"
+    description: "Path to Nx workspace (e.g. workspace, workspace-homepage)"
     required: false
-    default: ""
+    default: "workspace"
   environment:
     description: "Environment to use (run or prod)"
     required: false
@@ -58,12 +58,16 @@ runs:
       if: ${{ inputs.switch-environment }}
       shell: bash
       run: |
+        WS="${{ inputs.location }}"
+        WS="${WS:-workspace}"
+        WS="${WS%/}"
         pwd
         ls -lah
         echo "switch-environment: ${{ inputs.switch-environment }}"
         echo "environment: ${{ inputs.environment }}"
-        rm -f workspace/environments/src/lib/environments.ts
-        mv workspace/environments/src/lib/environments.${{ inputs.environment }}.ts workspace/environments/src/lib/environments.ts
+        echo "workspace: $WS"
+        rm -f "$WS/environments/src/lib/environments.ts"
+        mv "$WS/environments/src/lib/environments.${{ inputs.environment }}.ts" "$WS/environments/src/lib/environments.ts"
 
     - name: Build Nx service
       if: ${{ inputs.command == '' }}

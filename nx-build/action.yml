@@ -11,9 +11,9 @@ inputs:
     required: false
     default: 'nx run-many --target=build --all --verbose'
   location:
-    description: 'Location of the NX Workspace'
+    description: 'Path to Nx workspace (e.g. workspace, workspace-homepage)'
     required: false
-    default: ''
+    default: 'workspace'
 
 runs:
   using: 'composite'
@@ -26,18 +26,20 @@ runs:
 
     - name: Prepare environment
       shell: bash
-      working-directory: ${{ inputs.location }}
       run: |
-        rm -f workspace/environments/src/lib/environments.ts
-        mv workspace/environments/src/lib/environments.run.ts workspace/environments/src/lib/environments.ts
+        WS="${{ inputs.location }}"
+        WS="${WS:-workspace}"
+        WS="${WS%/}"
+        rm -f "$WS/environments/src/lib/environments.ts"
+        mv "$WS/environments/src/lib/environments.run.ts" "$WS/environments/src/lib/environments.ts"
 
     - name: Restore npm & Nx cache
       uses: actions/cache@v4
       with:
         path: |
           ~/.npm
-          workspace/.nx
-        key: build-${{ runner.os }}-${{ inputs.node-version }}-${{ hashFiles('workspace/package-lock.json') }}
+          ${{ inputs.location }}/.nx
+        key: build-${{ runner.os }}-${{ inputs.node-version }}-${{ hashFiles(format('{0}/package-lock.json', inputs.location)) }}
         restore-keys: |
           build-${{ runner.os }}-${{ inputs.node-version }}-
 
@@ -45,7 +47,6 @@ runs:
       shell: bash
       working-directory: ${{ inputs.location }}
       run: |
-        cd workspace
         npm i
         npx nx --version
         ${{ inputs.command }}
@@ -53,7 +54,10 @@ runs:
     - name: Debug repo structure
       shell: bash
       run: |
+        WS="${{ inputs.location }}"
+        WS="${WS:-workspace}"
+        WS="${WS%/}"
         pwd
         ls -lah
-        ls -lah workspace
-        ls -lah workspace/.nx
+        ls -lah "$WS"
+        ls -lah "$WS/.nx"

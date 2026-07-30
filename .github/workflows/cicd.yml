@@ -25,9 +25,9 @@ on:
         required: true
         type: string
       location:
-        description: 'Path to PHP project'
+        description: "Path to Nx workspace (e.g. workspace, workspace-homepage)"
         required: false
-        default: ''
+        default: "workspace"
         type: string
       command:
         description: "Optional custom command to execute instead of nx build"

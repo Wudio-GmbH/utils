@@ -26,14 +26,24 @@ on:
         required: true
         type: string
       location:
-        description: 'Path to PHP project'
+        description: "Path to Nx workspace (e.g. workspace, workspace-homepage)"
         required: false
-        default: ''
+        default: "workspace"
         type: string
-      cacheDestination:
-        description: 'Path for cache destination'
+      environment:
+        description: "Environment to use (run or qas)"
         required: false
-        default: ''
+        default: "run"
+        type: string
+      switch-environment:
+        description: "Whether to run Prepare environment (swap environments.run.ts)"
+        type: boolean
+        required: false
+        default: true
+      command:
+        description: "Optional custom command to execute instead of nx build"
+        required: false
+        default: ""
         type: string
       
 
@@ -63,9 +73,10 @@ jobs:
           username: ${{ inputs.username }}
           password: ${{ secrets.password }}
           image: ${{ inputs.image }}
-          artifact: ${{ inputs.artifact }}
           location: ${{ inputs.location }}
-          cacheDestination: ${{ inputs.cacheDestination }}
+          command: ${{ inputs.command }}
+          switch-environment: ${{ inputs.switch-environment }}
+          environment: ${{ inputs.environment }}
 
   docker-deploy:
     needs: docker-build
