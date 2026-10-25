@@ -49,6 +49,11 @@ on:
         required: false
         default: "[]"
         type: string
+      node-version:
+        description: "Node.js version for the build"
+        required: false
+        default: "24.x"
+        type: string
 
     secrets:
       kubeconfig:
@@ -95,6 +100,7 @@ jobs:
           command: ${{ inputs.command }}
           switch-environment: ${{ inputs.switch-environment }}
           environment: ${{ inputs.environment }}
+          node-version: ${{ inputs.node-version }}
 
   docker-deploy:
     needs: docker-build
